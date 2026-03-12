@@ -1,0 +1,96 @@
+﻿<div id="calendar"></div>
+
+<!-- Modal Crear/Editar -->
+<div class="modal fade" id="eventoModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form id="eventoForm">
+                <div class="modal-header">
+                    <h5 class="modal-title">Evento</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" id="eventoId" />
+                    <div class="mb-3">
+                        <label>Título</label>
+                        <input type="text" id="titulo" class="form-control" />
+                    </div>
+                    <div class="mb-3">
+                        <label>Fecha inicio</label>
+                        <input type="datetime-local" id="fechaInicio" class="form-control" />
+                    </div>
+                    <div class="mb-3">
+                        <label>Fecha fin</label>
+                        <input type="datetime-local" id="fechaFin" class="form-control" />
+                    </div>
+                    <div class="mb-3">
+                        <label>Color</label>
+                        <input type="color" id="color" class="form-control" />
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="submit" class="btn btn-primary">Guardar</button>
+                    <button type="button" class="btn btn-danger" id="btnEliminar">Eliminar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+      var calendarEl = document.getElementById('calendar');
+      var calendar = new FullCalendar.Calendar(calendarEl, {
+        initialView: 'dayGridMonth',
+        events: '/Eventos/GetEventos',
+        dateClick: function(info) {
+          $('#eventoId').val('');
+          $('#titulo').val('');
+          $('#fechaInicio').val(info.dateStr + "T00:00");
+          $('#fechaFin').val(info.dateStr + "T01:00");
+          $('#color').val('#3788d8');
+          $('#eventoModal').modal('show');
+        },
+        eventClick: function(info) {
+          $('#eventoId').val(info.event.id);
+          $('#titulo').val(info.event.title);
+          $('#fechaInicio').val(info.event.startStr);
+          $('#fechaFin').val(info.event.endStr);
+          $('#color').val(info.event.backgroundColor);
+          $('#eventoModal').modal('show');
+        },
+        editable: true,
+        eventDrop: function(info) {
+          $.post('/Eventos/MoveEvento', { id: info.event.id, nuevaFecha: info.event.startStr });
+        }
+      });
+      calendar.render();
+
+      $('#eventoForm').submit(function(e) {
+        e.preventDefault();
+        var id = $('#eventoId').val();
+        var data = {
+          Id: id,
+          Titulo: $('#titulo').val(),
+          FechaInicio: $('#fechaInicio').val(),
+          FechaFin: $('#fechaFin').val(),
+          Color: $('#color').val()
+        };
+        var url = id ? '/Eventos/UpdateEvento' : '/Eventos/CreateEvento';
+        $.post(url, data, function() {
+          calendar.refetchEvents();
+          $('#eventoModal').modal('hide');
+        });
+      });
+
+      $('#btnEliminar').click(function() {
+        var id = $('#eventoId').val();
+        if (id) {
+          $.post('/Eventos/DeleteEvento', { id: id }, function() {
+            calendar.refetchEvents();
+            $('#eventoModal').modal('hide');
+          });
+        }
+      });
+    });
+</script>
